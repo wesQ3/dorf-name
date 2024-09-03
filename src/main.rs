@@ -1,7 +1,7 @@
+use std::collections::HashMap;
+use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::fs::File;
-use std::collections::HashMap;
 
 fn main() -> std::io::Result<()> {
     let file_name = "data/language_DWARF.txt"; // utf8 converted
@@ -10,18 +10,26 @@ fn main() -> std::io::Result<()> {
 
     let mut tl_map = HashMap::new();
     for line in reader.lines() {
-        match process_line(&line?) {
-            Some(word) => tl_map.insert(word.0, word.1),
-            None => println!("skipped line {line:?}"),
+        let line = line?;
+        if let Some(word) = process_line(line.clone()) {
+            tl_map.insert(word.0, word.1);
+        } else {
+            println!("skipped {}", line);
         }
     }
+    println!("parsed {} words", tl_map.keys().len());
     Ok(())
 }
 
-fn process_line(line: &String) -> Option<(&str, &str)> {
-   if line.starts_with("[T_WORD:") {
-       line.strip_prefix("[T_WORD:")?.strip_suffix("]\r")?.split_once(':')
-   } else {
-       None
-   }
+fn process_line(line: String) -> Option<(String, String)> {
+    let line = line.trim();
+    if line.starts_with("[T_WORD:") {
+        line.strip_prefix("[T_WORD:")?
+            .strip_suffix("]")?
+            .split_once(':')
+            // convert to String to keep ownership
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+    } else {
+        None
+    }
 }
