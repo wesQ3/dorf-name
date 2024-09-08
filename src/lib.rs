@@ -30,8 +30,12 @@ impl Word {
         let trimmed = line.trim_end();
         let root = Self::parse_root(trimmed);
         println!("matched root {}", root);
-        // while let part = parse_word_form
-        //    noun/verb/adj etc
+        while let Ok(Some(part)) = WordForm::parse(reader) {
+            println!("  form {}", part.form_type);
+            // match part.form_type
+            //  NOUN: Noun::from_form(part)
+            //  VERB: Verb::from_form(part)
+        }
 
         Ok(Some(Word { root, noun: None, verb: None } ))
     }
@@ -40,6 +44,45 @@ impl Word {
         line.trim_start_matches("[WORD:")
             .trim_end_matches("]")
             .to_string()
+    }
+}
+
+struct WordForm {
+    form_type: String,
+    forms: Vec<String>,
+}
+
+impl WordForm {
+    fn parse(reader: &mut BufReader<File>) -> io::Result<Option<Self>> {
+        let mut header = String::new();
+        reader.read_line(&mut header)?;
+        if !header.starts_with("\t[") {
+            return Ok(None)
+        }
+        // handle match
+        let mut parts: Vec<&str> = header.trim()
+            .trim_start_matches('[')
+            .trim_end_matches(']')
+            .split(':')
+            .filter(|s| !s.is_empty())
+            .collect();
+        println!("parts read: {:?}", parts);
+
+        // consume remaining usage lines
+        let mut line = String::new();
+        while reader.read_line(&mut line)? != 0 && line.starts_with("\t\t") {
+            line.clear();
+        }
+        // rewind position to the line that didn't match
+        let line_len: i64 = line.len().try_into().unwrap();
+        reader.seek_relative(-line_len);
+
+        Ok(Some(
+            Self {
+                form_type: parts.remove(0).to_string(),
+                forms: parts.into_iter().map(|s| s.to_string()).collect(),
+            }
+        ))
     }
 }
 
