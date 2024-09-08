@@ -28,12 +28,18 @@ impl Word {
             return Ok(None)
         }
         let trimmed = line.trim_end();
-        // split out root
+        let root = Self::parse_root(trimmed);
+        println!("matched root {}", root);
         // while let part = parse_word_form
         //    noun/verb/adj etc
 
-        // placeholder return:
-        Ok(Some(Word { root: "FOO".to_string(), noun: None, verb: None } ))
+        Ok(Some(Word { root, noun: None, verb: None } ))
+    }
+
+    fn parse_root(line: &str) -> String {
+        line.trim_start_matches("[WORD:")
+            .trim_end_matches("]")
+            .to_string()
     }
 }
 
