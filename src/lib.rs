@@ -49,23 +49,30 @@ impl fmt::Display for Word {
 
 impl Word {
     fn parse(line: &String, reader: &mut BufReader<File>) -> io::Result<Option<Word>> {
-        if line == "" {
-            println!("unexpected end of word");
+        if line.trim() == "" {
+            // println!("unexpected end of word");
             return Ok(None);
         }
         if !line.starts_with("[WORD:") {
-            println!("not a word block");
+            let ignore = [
+                "language_words",
+                "[OBJECT:LANGUAGE]",
+            ];
+            if ignore.iter().any(|s| line.trim() == *s) {
+                return Ok(None);
+            }
+            println!("not a word block\n{}", line.trim());
             return Ok(None);
         }
         let trimmed = line.trim_end();
         let root = Self::parse_root(trimmed);
-        println!("matched root {}", root);
+        // println!("matched root {}", root);
         let mut word = Word {
             root,
             ..Default::default()
         };
         while let Ok(Some(part)) = WordForm::parse(reader) {
-            println!("  form {:?}", part);
+            // println!("  form {:?}", part);
             if part.form_type == "NOUN" {
                 word.noun = Some(Noun::from_form(part));
             } else if part.form_type == "VERB" {
@@ -105,7 +112,7 @@ impl WordForm {
             .split(':')
             .filter(|s| !s.is_empty())
             .collect();
-        println!("parts read: {:?}", parts);
+        // println!("parts read: {:?}", parts);
 
         // consume remaining usage lines
         let mut line = String::new();
