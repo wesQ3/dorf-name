@@ -1,16 +1,17 @@
 #![allow(dead_code)]
 #![allow(unused)]
+use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{self, BufRead, BufReader};
 
-#[derive(Debug)]
-struct Word {
+#[derive(Debug, Default)]
+pub struct Word {
     root: String,
     noun: Option<Noun>,
     verb: Option<Verb>,
-    // translations: HashMap<String, String>, // Language -> Translation
+    translations: HashMap<String, String>, // Language -> Translation
 }
 
 #[derive(Debug)]
@@ -59,7 +60,7 @@ impl Word {
         let trimmed = line.trim_end();
         let root = Self::parse_root(trimmed);
         println!("matched root {}", root);
-        let mut word = Word { root, noun: None, verb: None };
+        let mut word = Word { root, ..Default::default() };
         while let Ok(Some(part)) = WordForm::parse(reader) {
             println!("  form {:?}", part);
             if part.form_type == "NOUN" {
@@ -189,29 +190,68 @@ impl Verb {
 }
 
 pub struct Language {
-    words: Vec<Word>,
+    words: HashMap<String, Word>,
 }
 
 impl Language {
-    pub fn load() -> std::io::Result<Self> {
-        let file_name = "data/language_words.txt"; // utf8 converted
-        let f = File::open(file_name)?;
-        let mut reader = BufReader::new(f);
-        Ok(Language {
-            words: Self::read_lang_file(&mut reader)?
-        })
+    pub fn word(&self, w: &str) -> Option<&Word> {
+        self.words.get(w)
     }
 
-    fn read_lang_file(reader: &mut BufReader<File>) -> std::io::Result<Vec<Word>> {
-        let mut words = Vec::new();
+    pub fn load() -> std::io::Result<Self> {
+        // files must be utf8 converted
+        let f = File::open("data/language_words.txt")?;
+        let mut reader = BufReader::new(f);
+        let mut words = Self::read_lang_file(&mut reader)?;
+
+        let f = File::open("data/language_DWARF.txt")?;
+        let mut reader = BufReader::new(f);
+        Self::add_translation(&mut reader, &mut words, "DWARF".to_string());
+        Ok(Language { words })
+    }
+
+    fn read_lang_file(reader: &mut BufReader<File>) -> std::io::Result<HashMap<String, Word>> {
+        let mut words = HashMap::new();
         let mut line = String::new();
         while reader.read_line(&mut line)? != 0 {
             if let Ok(Some(word)) = Word::parse(&line, reader) {
-                words.push(word)
+                words.insert(word.root.clone(), word);
             }
             line.clear();
         }
         Ok(words)
+    }
+
+    fn add_translation(
+        reader: &mut BufReader<File>,
+        words: &mut HashMap<String, Word>,
+        tl_key: String,
+    )
+    -> std::io::Result<()> {
+        let mut line = String::new();
+        while reader.read_line(&mut line)? != 0 {
+            if let Some((k, v)) = Self::parse_translation_line(line.clone()) {
+                words.entry(k)
+                    .and_modify(|word| {
+                        word.translations.insert(tl_key.clone(), v);
+                    });
+            }
+            line.clear();
+        }
+        Ok(())
+    }
+
+    pub fn parse_translation_line(line: String) -> Option<(String, String)> {
+        let line = line.trim();
+        if line.starts_with("[T_WORD:") {
+            line.strip_prefix("[T_WORD:")?
+                .strip_suffix("]")?
+                .split_once(':')
+                // convert to String to keep ownership
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+        } else {
+            None
+        }
     }
 
     pub fn npc_name(&self) -> String {
