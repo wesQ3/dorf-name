@@ -1,9 +1,10 @@
 #![allow(dead_code)]
 #![allow(unused)]
+use rand::prelude::SliceRandom;
+use rand::thread_rng;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::{self, BufRead, BufReader};
 
 #[derive(Debug, Default)]
@@ -150,7 +151,7 @@ impl WordForm {
         }
         // rewind position to the line that didn't match
         let line_len: i64 = line.len().try_into().unwrap();
-        reader.seek_relative(-line_len);
+        let _ = reader.seek_relative(-line_len);
 
         Ok(Some(Self {
             form_type: parts.remove(0).to_string(),
@@ -216,7 +217,7 @@ impl Language {
 
         let f = File::open("data/language_DWARF.txt")?;
         let mut reader = BufReader::new(f);
-        Self::add_translation(&mut reader, &mut words, "DWARF".to_string());
+        let _ = Self::add_translation(&mut reader, &mut words, "DWARF".to_string());
         Ok(Language { words })
     }
 
@@ -263,6 +264,14 @@ impl Language {
     }
 
     pub fn npc_name(&self) -> String {
-        "Urist McNotImplementedYet".to_string()
+        let mut rng = thread_rng();
+        let keys: Vec<&String> = self.words.keys().collect();
+        let given = keys.choose(&mut rng).unwrap();
+        let sur_1 = keys.choose(&mut rng).unwrap();
+        let sur_2 = keys.choose(&mut rng).unwrap();
+
+        let given_dw = self.words.get(given.as_str()).unwrap()
+            .translations.get("DWARF").unwrap();
+        format!("{} {}{}", given_dw, sur_1.to_lowercase(), sur_2.to_lowercase())
     }
 }
