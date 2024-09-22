@@ -51,22 +51,24 @@ impl Word {
     fn parse(line: &String, reader: &mut BufReader<File>) -> io::Result<Option<Word>> {
         if line == "" {
             println!("unexpected end of word");
-            return Ok(None)
+            return Ok(None);
         }
         if !line.starts_with("[WORD:") {
             println!("not a word block");
-            return Ok(None)
+            return Ok(None);
         }
         let trimmed = line.trim_end();
         let root = Self::parse_root(trimmed);
         println!("matched root {}", root);
-        let mut word = Word { root, ..Default::default() };
+        let mut word = Word {
+            root,
+            ..Default::default()
+        };
         while let Ok(Some(part)) = WordForm::parse(reader) {
             println!("  form {:?}", part);
             if part.form_type == "NOUN" {
                 word.noun = Some(Noun::from_form(part));
-            }
-            else if part.form_type == "VERB" {
+            } else if part.form_type == "VERB" {
                 word.verb = Some(Verb::from_form(part));
             }
         }
@@ -93,10 +95,11 @@ impl WordForm {
         let mut header = String::new();
         reader.read_line(&mut header)?;
         if !header.starts_with("\t[") {
-            return Ok(None)
+            return Ok(None);
         }
         // handle match
-        let mut parts: Vec<&str> = header.trim()
+        let mut parts: Vec<&str> = header
+            .trim()
             .trim_start_matches('[')
             .trim_end_matches(']')
             .split(':')
@@ -132,7 +135,9 @@ impl WordForm {
                 "[THE_COMPOUND_PREFIX]" => usages.push(Usage::TheCompoundPrefix),
                 "[THE_NOUN_PLUR]" => usages.push(Usage::TheNounPlur),
                 "[THE_NOUN_SING]" => usages.push(Usage::TheNounSing),
-                _ => { println!("! unknown usage what ho: {:?}", line) },
+                _ => {
+                    println!("! unknown usage what ho: {:?}", line)
+                }
             }
             line.clear();
         }
@@ -140,13 +145,11 @@ impl WordForm {
         let line_len: i64 = line.len().try_into().unwrap();
         reader.seek_relative(-line_len);
 
-        Ok(Some(
-            Self {
-                form_type: parts.remove(0).to_string(),
-                forms: parts.into_iter().map(|s| s.to_string()).collect(),
-                usages,
-            }
-        ))
+        Ok(Some(Self {
+            form_type: parts.remove(0).to_string(),
+            forms: parts.into_iter().map(|s| s.to_string()).collect(),
+            usages,
+        }))
     }
 }
 
@@ -226,15 +229,13 @@ impl Language {
         reader: &mut BufReader<File>,
         words: &mut HashMap<String, Word>,
         tl_key: String,
-    )
-    -> std::io::Result<()> {
+    ) -> std::io::Result<()> {
         let mut line = String::new();
         while reader.read_line(&mut line)? != 0 {
             if let Some((k, v)) = Self::parse_translation_line(line.clone()) {
-                words.entry(k)
-                    .and_modify(|word| {
-                        word.translations.insert(tl_key.clone(), v);
-                    });
+                words.entry(k).and_modify(|word| {
+                    word.translations.insert(tl_key.clone(), v);
+                });
             }
             line.clear();
         }
