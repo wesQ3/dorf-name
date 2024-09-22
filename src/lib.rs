@@ -10,7 +10,6 @@ struct Word {
     root: String,
     noun: Option<Noun>,
     verb: Option<Verb>,
-    // usages: Vec<Usage>,
     // translations: HashMap<String, String>, // Language -> Translation
 }
 
@@ -50,24 +49,28 @@ impl fmt::Display for Word {
 impl Word {
     fn parse(line: &String, reader: &mut BufReader<File>) -> io::Result<Option<Word>> {
         if line == "" {
-            // return None("unexpected end of word")
+            println!("unexpected end of word");
             return Ok(None)
         }
         if !line.starts_with("[WORD:") {
-            // return None("not a word block")
+            println!("not a word block");
             return Ok(None)
         }
         let trimmed = line.trim_end();
         let root = Self::parse_root(trimmed);
         println!("matched root {}", root);
+        let mut word = Word { root, noun: None, verb: None };
         while let Ok(Some(part)) = WordForm::parse(reader) {
             println!("  form {:?}", part);
-            // match part.form_type
-            //  NOUN: Noun::from_form(part)
-            //  VERB: Verb::from_form(part)
+            if part.form_type == "NOUN" {
+                word.noun = Some(Noun::from_form(part));
+            }
+            else if part.form_type == "VERB" {
+                word.verb = Some(Verb::from_form(part));
+            }
         }
 
-        Ok(Some(Word { root, noun: None, verb: None } ))
+        Ok(Some(word))
     }
 
     fn parse_root(line: &str) -> String {
@@ -150,22 +153,39 @@ impl WordForm {
 struct Noun {
     singular: String,
     plural: String,
-    front_compound_sing: bool,
-    rear_compound_sing: bool,
-    the_compound_sing: bool,
-    the_singular: bool,
-    rear_compound_plural: bool,
-    of_plural: bool,
+    usages: Vec<Usage>,
+}
+
+impl Noun {
+    pub fn from_form(form: WordForm) -> Self {
+        Self {
+            singular: form.forms[0].clone(),
+            plural: match form.forms.get(1) {
+                Some(plural) => plural.clone(),
+                None => "ERR_NO_PLURAL".to_string(),
+            },
+            usages: form.usages,
+        }
+    }
 }
 
 #[derive(Debug)]
 struct Verb {
     infinitive: String,
-    third_person_sing: String,
-    past_tense: String,
-    past_participle: String,
-    present_participle: String,
-    standard_verb: bool,
+    // third_person_sing: String,
+    // past_tense: String,
+    // past_participle: String,
+    // present_participle: String,
+    usages: Vec<Usage>,
+}
+
+impl Verb {
+    pub fn from_form(form: WordForm) -> Self {
+        Self {
+            infinitive: form.forms[0].clone(),
+            usages: form.usages,
+        }
+    }
 }
 
 pub struct Language {
