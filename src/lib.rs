@@ -215,6 +215,10 @@ impl Language {
         let mut reader = BufReader::new(f);
         let mut words = Self::read_lang_file(&mut reader)?;
 
+        let f = File::open("data/language_SYM.txt")?;
+        let mut reader = BufReader::new(f);
+        let _ = Self::add_symbols(&mut reader, &mut words);
+
         let f = File::open("data/language_DWARF.txt")?;
         let mut reader = BufReader::new(f);
         let _ = Self::add_translation(&mut reader, &mut words, "DWARF".to_string());
@@ -262,6 +266,66 @@ impl Language {
             None
         }
     }
+
+    fn add_symbols(
+        reader: &mut BufReader<File>,
+        words: &mut HashMap<String, Word>,
+    ) -> std::io::Result<()> {
+        let mut line = String::new();
+        while reader.read_line(&mut line)? != 0 {
+            if let Ok(Some(symbol)) = Self::read_symbol_block(&line, reader) {
+                println!("symbol read {}", symbol);
+            }
+            line.clear();
+        }
+        Ok(())
+    }
+
+    pub fn read_symbol_line(reader: &mut BufReader<File>) -> io::Result<Option<(String)>> {
+        let mut line = String::new();
+        reader.read_line(&mut line)?;
+        if !line.starts_with("\t[") {
+            return Ok(None);
+        }
+        let line = line.trim();
+        let line = line.trim_start_matches("[S_WORD:")
+            .trim_end_matches("]")
+            .to_string();
+        Ok(Some(line))
+    }
+
+    fn parse_symbol_root(line: &str) -> String {
+        line.trim_start_matches("[SYMBOL:")
+            .trim_end_matches("]")
+            .to_string()
+    }
+
+    fn read_symbol_block(line: &String, reader: &mut BufReader<File>) -> io::Result<Option<(String)>> {
+        if line.trim() == "" {
+            println!("unexpected end of symbol");
+            return Ok(None);
+        }
+        if !line.starts_with("[SYMBOL:") {
+            let ignore = [
+                "language_SYM",
+                "[OBJECT:LANGUAGE]"
+            ];
+            if ignore.iter().any(|s| line.trim() == *s) {
+                return Ok(None);
+            }
+            println!("not a symbol block\n{}", line.trim());
+            return Ok(None);
+        }
+        let trimmed = line.trim_end();
+        let root = Self::parse_symbol_root(trimmed);
+        println!("symbol root {}", root);
+        while let Ok(Some(s_word)) = Self::read_symbol_line(reader) {
+            println!("  s_word {} -> {}", root, s_word);
+        }
+
+        Ok(Some((root)))
+    }
+
 
     pub fn npc_name(&self) -> String {
         let mut rng = thread_rng();
