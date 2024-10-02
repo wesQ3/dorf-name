@@ -13,6 +13,7 @@ pub struct Word {
     noun: Option<Noun>,
     verb: Option<Verb>,
     translations: HashMap<String, String>, // Language -> Translation
+    symbols: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -200,8 +201,10 @@ impl Verb {
     }
 }
 
+#[derive(Default)]
 pub struct Language {
     words: HashMap<String, Word>,
+    symbol_index: HashMap<String, Vec<String>>,
 }
 
 impl Language {
@@ -217,12 +220,12 @@ impl Language {
 
         let f = File::open("data/language_SYM.txt")?;
         let mut reader = BufReader::new(f);
-        let _ = Self::add_symbols(&mut reader, &mut words);
+        let symbol_index = Self::add_symbols(&mut reader, &mut words)?;
 
         let f = File::open("data/language_DWARF.txt")?;
         let mut reader = BufReader::new(f);
         let _ = Self::add_translation(&mut reader, &mut words, "DWARF".to_string());
-        Ok(Language { words })
+        Ok(Language { words, symbol_index })
     }
 
     fn read_lang_file(reader: &mut BufReader<File>) -> std::io::Result<HashMap<String, Word>> {
@@ -270,15 +273,18 @@ impl Language {
     fn add_symbols(
         reader: &mut BufReader<File>,
         words: &mut HashMap<String, Word>,
-    ) -> std::io::Result<()> {
+    ) -> std::io::Result<HashMap<String, Vec<String>>> {
+        let mut symbols = HashMap::new();
         let mut line = String::new();
         while reader.read_line(&mut line)? != 0 {
-            if let Ok(Some(symbol)) = Self::read_symbol_block(&line, reader) {
+            if let Ok(Some((symbol, list))) = Self::read_symbol_block(&line, reader, words) {
                 println!("symbol read {}", symbol);
+                println!("symbol index {:?}", list);
+                symbols.insert(symbol.clone(), list);
             }
             line.clear();
         }
-        Ok(())
+        Ok(symbols)
     }
 
     pub fn read_symbol_line(reader: &mut BufReader<File>) -> io::Result<Option<(String)>> {
@@ -300,7 +306,11 @@ impl Language {
             .to_string()
     }
 
-    fn read_symbol_block(line: &String, reader: &mut BufReader<File>) -> io::Result<Option<(String)>> {
+    fn read_symbol_block(
+        line: &String,
+        reader: &mut BufReader<File>,
+        words: &mut HashMap<String,Word>
+    ) -> io::Result<Option<(String, Vec<String>)>> {
         if line.trim() == "" {
             println!("unexpected end of symbol");
             return Ok(None);
@@ -317,17 +327,23 @@ impl Language {
             return Ok(None);
         }
         let trimmed = line.trim_end();
-        let root = Self::parse_symbol_root(trimmed);
-        println!("symbol root {}", root);
+        let s_root = Self::parse_symbol_root(trimmed);
+        println!("symbol s_root {}", s_root);
+
+        let mut symbol_list = Vec::new();
         while let Ok(Some(s_word)) = Self::read_symbol_line(reader) {
-            println!("  s_word {} -> {}", root, s_word);
+            println!("  s_word {} -> {}", s_root, s_word);
+            words.entry(s_word.clone()).and_modify(|word| {
+                word.symbols.push(s_root.clone());
+            });
+            symbol_list.push(s_word);
         }
 
-        Ok(Some((root)))
+        Ok(Some((s_root, symbol_list)))
     }
 
 
-    pub fn npc_name(&self) -> String {
+    pub fn npc_name(&self, preset: &str) -> String {
         let mut rng = thread_rng();
         let keys: Vec<&String> = self.words.keys().collect();
         let given = keys.choose(&mut rng).unwrap();
@@ -335,7 +351,7 @@ impl Language {
         let sur_2 = keys.choose(&mut rng).unwrap();
 
         let given_dw = self.words.get(given.as_str()).unwrap()
-            .translations.get("DWARF").unwrap();
+            .translations.get(preset).unwrap();
         format!("{} {}{}", given_dw, sur_1.to_lowercase(), sur_2.to_lowercase())
     }
 }
