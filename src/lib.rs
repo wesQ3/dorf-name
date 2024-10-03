@@ -358,6 +358,10 @@ impl Language {
         };
         let mut keys: Vec<&String> = vec![];
         for (symbol, s_words) in self.symbol_index.iter() {
+            if (symbol.starts_with("NAME_")) {
+                // name* symbols are for places/structures
+                continue;
+            }
             if (preset.skip_symbols.contains(symbol)) {
                 continue;
             }
