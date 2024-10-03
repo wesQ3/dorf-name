@@ -374,6 +374,17 @@ impl Language {
 
         let given_dw = self.words.get(given.as_str()).unwrap()
             .translations.get(preset_lang).unwrap();
-        format!("{} {}{}", given_dw, sur_1.to_lowercase(), sur_2.to_lowercase())
+        format!("{} {}{}",
+                ucfirst(given_dw),
+                ucfirst(sur_1.to_lowercase().as_str()), sur_2.to_lowercase())
+    }
+}
+
+// https://stackoverflow.com/a/38406885
+fn ucfirst(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
     }
 }
