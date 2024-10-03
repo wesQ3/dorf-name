@@ -362,11 +362,12 @@ impl Language {
                 // name* symbols are for places/structures
                 continue;
             }
-            if (preset.skip_symbols.contains(symbol)) {
+            if (preset.skip_symbols.iter().any(|s| s == symbol)) {
                 continue;
             }
-            if (preset.favor_symbols.contains(symbol)) {
-                // just double up on favored symbols
+            if (preset.favor_symbols.iter().any(|s| s == symbol)) {
+                // favored symbols get extra chances in the dice roll
+                keys.extend(s_words);
                 keys.extend(s_words);
             }
             keys.extend(s_words);
