@@ -202,6 +202,12 @@ impl Verb {
 }
 
 #[derive(Default)]
+struct NamePreset {
+    favor_symbols: Vec<String>,
+    skip_symbols: Vec<String>,
+}
+
+#[derive(Default)]
 pub struct Language {
     words: HashMap<String, Word>,
     symbol_index: HashMap<String, Vec<String>>,
@@ -278,8 +284,8 @@ impl Language {
         let mut line = String::new();
         while reader.read_line(&mut line)? != 0 {
             if let Ok(Some((symbol, list))) = Self::read_symbol_block(&line, reader, words) {
-                println!("symbol read {}", symbol);
-                println!("symbol index {:?}", list);
+                // println!("symbol read {}", symbol);
+                // println!("symbol index {:?}", list);
                 symbols.insert(symbol.clone(), list);
             }
             line.clear();
@@ -328,11 +334,11 @@ impl Language {
         }
         let trimmed = line.trim_end();
         let s_root = Self::parse_symbol_root(trimmed);
-        println!("symbol s_root {}", s_root);
+        // println!("symbol s_root {}", s_root);
 
         let mut symbol_list = Vec::new();
         while let Ok(Some(s_word)) = Self::read_symbol_line(reader) {
-            println!("  s_word {} -> {}", s_root, s_word);
+            // println!("  s_word {} -> {}", s_root, s_word);
             words.entry(s_word.clone()).and_modify(|word| {
                 word.symbols.push(s_root.clone());
             });
@@ -343,15 +349,31 @@ impl Language {
     }
 
 
-    pub fn npc_name(&self, preset: &str) -> String {
+    pub fn npc_name(&self, preset_lang: &str) -> String {
+        let preset = NamePreset {
+            favor_symbols: ["ARTIFICE", "EARTH"]
+                .iter().map(|s| s.to_string()).collect(),
+            skip_symbols: ["DOMESTIC", "SUBORDINATE", "EVIL", "FLOWERY", "NEGATIVE", "UGLY", "NEGATOR"]
+                .iter().map(|s| s.to_string()).collect(),
+        };
+        let mut keys: Vec<&String> = vec![];
+        for (symbol, s_words) in self.symbol_index.iter() {
+            if (preset.skip_symbols.contains(symbol)) {
+                continue;
+            }
+            if (preset.favor_symbols.contains(symbol)) {
+                // just double up on favored symbols
+                keys.extend(s_words);
+            }
+            keys.extend(s_words);
+        }
         let mut rng = thread_rng();
-        let keys: Vec<&String> = self.words.keys().collect();
         let given = keys.choose(&mut rng).unwrap();
         let sur_1 = keys.choose(&mut rng).unwrap();
         let sur_2 = keys.choose(&mut rng).unwrap();
 
         let given_dw = self.words.get(given.as_str()).unwrap()
-            .translations.get(preset).unwrap();
+            .translations.get(preset_lang).unwrap();
         format!("{} {}{}", given_dw, sur_1.to_lowercase(), sur_2.to_lowercase())
     }
 }
