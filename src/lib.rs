@@ -12,6 +12,8 @@ pub struct Word {
     root: String,
     noun: Option<Noun>,
     verb: Option<Verb>,
+    adj: Option<Adjective>,
+    prefix: Option<Prefix>,
     translations: HashMap<String, String>, // Language -> Translation
     symbols: Vec<String>,
 }
@@ -79,6 +81,10 @@ impl Word {
                 word.noun = Some(Noun::from_form(part));
             } else if part.form_type == "VERB" {
                 word.verb = Some(Verb::from_form(part));
+            } else if part.form_type == "ADJ" {
+                word.adj = Some(Adjective::from_form(part));
+            } else if part.form_type == "PREFIX" {
+                word.prefix = Some(Prefix::from_form(part));
             }
         }
 
@@ -98,7 +104,11 @@ impl Word {
         if let Some(verb) = &self.verb {
             return verb.infinitive.clone()
         }
-        return "Noname!".to_string()
+        if let Some(adj) = &self.adj {
+            return adj.adj.clone()
+        }
+        println!("Noname! {:#?}", &self);
+        return "noname!".to_string()
     }
 }
 
@@ -206,6 +216,36 @@ impl Verb {
     pub fn from_form(form: WordForm) -> Self {
         Self {
             infinitive: form.forms[0].clone(),
+            usages: form.usages,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Adjective {
+    adj: String,
+    usages: Vec<Usage>,
+}
+
+impl Adjective {
+    pub fn from_form(form: WordForm) -> Self {
+        Self {
+            adj: form.forms[0].clone(),
+            usages: form.usages,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Prefix {
+    prefix: String,
+    usages: Vec<Usage>,
+}
+
+impl Prefix {
+    pub fn from_form(form: WordForm) -> Self {
+        Self {
+            prefix: form.forms[0].clone(),
             usages: form.usages,
         }
     }
