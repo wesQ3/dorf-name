@@ -262,7 +262,7 @@ impl Prefix {
 #[derive(Default)]
 struct NamePreset {
     favor_symbols: Vec<String>,
-    skip_symbols: Vec<String>,
+    exclude_symbols: Vec<String>,
 }
 
 #[derive(Default)]
@@ -411,7 +411,7 @@ impl Language {
         let preset = NamePreset {
             favor_symbols: ["ARTIFICE", "EARTH"]
                 .iter().map(|s| s.to_string()).collect(),
-            skip_symbols: ["DOMESTIC", "SUBORDINATE", "EVIL", "FLOWERY", "NEGATIVE", "UGLY", "NEGATOR"]
+            exclude_symbols: ["DOMESTIC", "SUBORDINATE", "EVIL", "FLOWERY", "NEGATIVE", "UGLY", "NEGATOR"]
                 .iter().map(|s| s.to_string()).collect(),
         };
 
@@ -436,25 +436,30 @@ impl Language {
     }
 
     fn name_pool(&self, preset: NamePreset) -> Vec<&String> {
-        let mut keys: Vec<&String> = vec![];
+        let mut pool: Vec<&String> = vec![];
+        let mut blacklist: Vec<&String> = vec![];
         for (symbol, s_words) in self.symbol_index.iter() {
             if (symbol.starts_with("NAME_")) {
                 // name* symbols are for places/structures
                 continue;
             }
-            if (preset.skip_symbols.iter().any(|s| s == symbol)) {
+            if (preset.exclude_symbols.iter().any(|s| s == symbol)) {
+                blacklist.extend(s_words);
                 continue;
             }
             if (preset.favor_symbols.iter().any(|s| s == symbol)) {
                 // favored symbols get extra chances in the dice roll
-                keys.extend(s_words);
-                keys.extend(s_words);
+                pool.extend(s_words);
+                pool.extend(s_words);
             }
-            keys.extend(s_words);
+            pool.extend(s_words);
         }
+        // sorted search is much faster than .contains()
+        blacklist.sort();
+        pool.retain(|&key| !blacklist.binary_search(&key).is_ok());
         // exclude prefixes
-        keys.retain(|&key| self.words.get(key).unwrap().prefix.is_none());
-        return keys
+        pool.retain(|&key| self.words.get(key).unwrap().prefix.is_none());
+        return pool
     }
 }
 
