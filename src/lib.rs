@@ -104,6 +104,9 @@ impl Word {
         }
         if let Some(verb) = &self.verb {
             pool.push(verb.infinitive.clone());
+            pool.push(verb.past_tense.clone());
+            pool.push(verb.past_participle.clone());
+            pool.push(verb.present_participle.clone());
         }
         if let Some(adj) = &self.adj {
             pool.push(adj.adj.clone());
@@ -206,10 +209,10 @@ impl Noun {
 #[derive(Debug)]
 struct Verb {
     infinitive: String,
-    // third_person_sing: String,
-    // past_tense: String,
-    // past_participle: String,
-    // present_participle: String,
+    third_person_sing: String,
+    past_tense: String,
+    past_participle: String,
+    present_participle: String,
     usages: Vec<Usage>,
 }
 
@@ -217,6 +220,10 @@ impl Verb {
     pub fn from_form(form: WordForm) -> Self {
         Self {
             infinitive: form.forms[0].clone(),
+            third_person_sing: form.forms[1].clone(),
+            past_tense: form.forms[2].clone(),
+            past_participle: form.forms[3].clone(),
+            present_participle: form.forms[4].clone(),
             usages: form.usages,
         }
     }
