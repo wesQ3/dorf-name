@@ -98,17 +98,18 @@ impl Word {
     }
 
     pub fn pick_name(&self) -> String {
+        let mut pool = Vec::new();
         if let Some(noun) = &self.noun {
-            return noun.singular.clone()
+            pool.push(noun.singular.clone());
         }
         if let Some(verb) = &self.verb {
-            return verb.infinitive.clone()
+            pool.push(verb.infinitive.clone());
         }
         if let Some(adj) = &self.adj {
-            return adj.adj.clone()
+            pool.push(adj.adj.clone());
         }
-        println!("Noname! {:#?}", &self);
-        return "noname!".to_string()
+        let mut rng = thread_rng();
+        pool.choose(&mut rng).unwrap().to_string()
     }
 }
 
@@ -368,7 +369,7 @@ impl Language {
         words: &mut HashMap<String,Word>
     ) -> io::Result<Option<(String, Vec<String>)>> {
         if line.trim() == "" {
-            println!("unexpected end of symbol");
+            // println!("unexpected end of symbol");
             return Ok(None);
         }
         if !line.starts_with("[SYMBOL:") {
@@ -425,10 +426,7 @@ impl Language {
         // exclude prefixes
         keys.retain(|&key| self.words.get(key).unwrap().prefix.is_none());
 
-        let mut rng = thread_rng();
-        let given = keys.choose(&mut rng).unwrap();
-        let sur_1 = keys.choose(&mut rng).unwrap();
-        let sur_2 = keys.choose(&mut rng).unwrap();
+        let (given, sur_1, sur_2) = Self::pick_name_words(keys);
 
         let given_dw = self.words.get(given.as_str()).unwrap()
             .translations.get(preset_lang).unwrap();
@@ -437,6 +435,14 @@ impl Language {
         format!("{} {}{}",
                 ucfirst(given_dw),
                 ucfirst(sur_1.to_lowercase().as_str()), sur_2.to_lowercase())
+    }
+
+    fn pick_name_words(pool: Vec<&String>) -> (String, String, String) {
+        let mut rng = thread_rng();
+        let given = pool.choose(&mut rng).unwrap().to_string();
+        let sur_1 = pool.choose(&mut rng).unwrap().to_string();
+        let sur_2 = pool.choose(&mut rng).unwrap().to_string();
+        (given, sur_1, sur_2)
     }
 }
 
