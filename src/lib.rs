@@ -90,6 +90,16 @@ impl Word {
             .trim_end_matches("]")
             .to_string()
     }
+
+    pub fn pick_name(&self) -> String {
+        if let Some(noun) = &self.noun {
+            return noun.singular.clone()
+        }
+        if let Some(verb) = &self.verb {
+            return verb.infinitive.clone()
+        }
+        return "Noname!".to_string()
+    }
 }
 
 #[derive(Debug)]
@@ -379,6 +389,8 @@ impl Language {
 
         let given_dw = self.words.get(given.as_str()).unwrap()
             .translations.get(preset_lang).unwrap();
+        let sur_1 = self.words.get(sur_1.as_str()).unwrap().pick_name();
+        let sur_2 = self.words.get(sur_2.as_str()).unwrap().pick_name();
         format!("{} {}{}",
                 ucfirst(given_dw),
                 ucfirst(sur_1.to_lowercase().as_str()), sur_2.to_lowercase())
