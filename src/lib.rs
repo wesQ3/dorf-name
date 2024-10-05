@@ -414,6 +414,28 @@ impl Language {
             skip_symbols: ["DOMESTIC", "SUBORDINATE", "EVIL", "FLOWERY", "NEGATIVE", "UGLY", "NEGATOR"]
                 .iter().map(|s| s.to_string()).collect(),
         };
+
+        let keys = self.name_pool(preset);
+        let (given, sur_1, sur_2) = Self::pick_name_words(keys);
+
+        let given_dw = self.words.get(given.as_str()).unwrap()
+            .translations.get(preset_lang).unwrap();
+        let sur_1 = self.words.get(sur_1.as_str()).unwrap().pick_name();
+        let sur_2 = self.words.get(sur_2.as_str()).unwrap().pick_name();
+        format!("{} {}{}",
+                ucfirst(given_dw),
+                ucfirst(sur_1.to_lowercase().as_str()), sur_2.to_lowercase())
+    }
+
+    fn pick_name_words(pool: Vec<&String>) -> (String, String, String) {
+        let mut rng = thread_rng();
+        let given = pool.choose(&mut rng).unwrap().to_string();
+        let sur_1 = pool.choose(&mut rng).unwrap().to_string();
+        let sur_2 = pool.choose(&mut rng).unwrap().to_string();
+        (given, sur_1, sur_2)
+    }
+
+    fn name_pool(&self, preset: NamePreset) -> Vec<&String> {
         let mut keys: Vec<&String> = vec![];
         for (symbol, s_words) in self.symbol_index.iter() {
             if (symbol.starts_with("NAME_")) {
@@ -432,24 +454,7 @@ impl Language {
         }
         // exclude prefixes
         keys.retain(|&key| self.words.get(key).unwrap().prefix.is_none());
-
-        let (given, sur_1, sur_2) = Self::pick_name_words(keys);
-
-        let given_dw = self.words.get(given.as_str()).unwrap()
-            .translations.get(preset_lang).unwrap();
-        let sur_1 = self.words.get(sur_1.as_str()).unwrap().pick_name();
-        let sur_2 = self.words.get(sur_2.as_str()).unwrap().pick_name();
-        format!("{} {}{}",
-                ucfirst(given_dw),
-                ucfirst(sur_1.to_lowercase().as_str()), sur_2.to_lowercase())
-    }
-
-    fn pick_name_words(pool: Vec<&String>) -> (String, String, String) {
-        let mut rng = thread_rng();
-        let given = pool.choose(&mut rng).unwrap().to_string();
-        let sur_1 = pool.choose(&mut rng).unwrap().to_string();
-        let sur_2 = pool.choose(&mut rng).unwrap().to_string();
-        (given, sur_1, sur_2)
+        return keys
     }
 }
 
