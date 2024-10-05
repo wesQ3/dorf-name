@@ -422,6 +422,9 @@ impl Language {
             }
             keys.extend(s_words);
         }
+        // exclude prefixes
+        keys.retain(|&key| self.words.get(key).unwrap().prefix.is_none());
+
         let mut rng = thread_rng();
         let given = keys.choose(&mut rng).unwrap();
         let sur_1 = keys.choose(&mut rng).unwrap();
