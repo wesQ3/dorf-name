@@ -30,6 +30,7 @@ pub fn add_translation(
         }
         line.clear();
     }
+    // println!("{} parsing completed", tl_key);
     Ok(())
 }
 

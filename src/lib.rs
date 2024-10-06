@@ -38,6 +38,18 @@ impl Language {
         let f = File::open("data/language_DWARF.txt")?;
         let mut reader = BufReader::new(f);
         let _ = files::add_translation(&mut reader, &mut words, "DWARF".to_string());
+
+        let f = File::open("data/language_ELF.txt")?;
+        let mut reader = BufReader::new(f);
+        let _ = files::add_translation(&mut reader, &mut words, "ELF".to_string());
+
+        let f = File::open("data/language_GOBLIN.txt")?;
+        let mut reader = BufReader::new(f);
+        let _ = files::add_translation(&mut reader, &mut words, "GOBLIN".to_string());
+
+        let f = File::open("data/language_HUMAN.txt")?;
+        let mut reader = BufReader::new(f);
+        let _ = files::add_translation(&mut reader, &mut words, "HUMAN".to_string());
         Ok(Language { words, symbol_index })
     }
 
