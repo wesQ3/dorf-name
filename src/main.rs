@@ -22,8 +22,12 @@ fn main() -> std::io::Result<()> {
         for _ in 1..count {
             println!("{}", lang.npc_name("DWARF"));
         }
-    } else if let Some(word) = cli.word {
-        println!("{:#?}", lang.word(&word.to_uppercase()));
+    } else if let Some(string) = cli.word {
+        if let Some(word) = lang.word(&string.to_uppercase()) {
+            println!("{:#?}", word);
+        } else {
+            println!("The dwarves have no word for {}.", string);
+        }
     } else {
         println!("{}", lang.npc_name("DWARF"));
     }
