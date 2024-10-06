@@ -37,8 +37,10 @@ package-linux: copy-linux
 
 # Package the Windows distribution into a zip file with Git tag in the name
 package-windows: copy-windows
-	zip -r $(DIST_DIR)/$(BIN_NAME)-windows-$(GIT_TAG).zip $(DIST_DIR)/windows/*
+	cd $(DIST_DIR)/windows \
+        && zip -r ../$(BIN_NAME)-windows-$(GIT_TAG).zip *
 
 # Clean up the dist directory
 clean:
 	rm -rf $(DIST_DIR)
+	rm -rf target
